@@ -28,56 +28,65 @@ export const STATUS_LABELS = {
   [STATUS.DONE]: '完成'
 }
 
-export function useTaskStore() {
-  const tasks = ref([])
-  const darkMode = ref(false)
+// 单例状态 - 在模块级别创建，确保所有组件共享同一实例
+const tasks = ref([])
+const darkMode = ref(false)
+let initialized = false
 
-  // 从localStorage加载数据
-  const loadFromStorage = () => {
-    try {
-      const savedTasks = localStorage.getItem('tasks')
-      if (savedTasks) {
-        tasks.value = JSON.parse(savedTasks)
-      }
-      const savedDarkMode = localStorage.getItem('darkMode')
-      if (savedDarkMode) {
-        darkMode.value = JSON.parse(savedDarkMode)
-      }
-    } catch (e) {
-      console.error('Failed to load from localStorage:', e)
+// 从localStorage加载数据
+const loadFromStorage = () => {
+  try {
+    const savedTasks = localStorage.getItem('tasks')
+    if (savedTasks) {
+      tasks.value = JSON.parse(savedTasks)
     }
-  }
-
-  // 保存到localStorage
-  const saveToStorage = () => {
-    try {
-      localStorage.setItem('tasks', JSON.stringify(tasks.value))
-      localStorage.setItem('darkMode', JSON.stringify(darkMode.value))
-    } catch (e) {
-      console.error('Failed to save to localStorage:', e)
+    const savedDarkMode = localStorage.getItem('darkMode')
+    if (savedDarkMode) {
+      darkMode.value = JSON.parse(savedDarkMode)
     }
+  } catch (e) {
+    console.error('Failed to load from localStorage:', e)
   }
+}
 
-  // 监听变化并保存
-  watch(tasks, saveToStorage, { deep: true })
-  watch(darkMode, saveToStorage)
+// 保存到localStorage
+const saveToStorage = () => {
+  try {
+    localStorage.setItem('tasks', JSON.stringify(tasks.value))
+    localStorage.setItem('darkMode', JSON.stringify(darkMode.value))
+  } catch (e) {
+    console.error('Failed to save to localStorage:', e)
+  }
+}
 
-  // 初始化时加载
-  onMounted(() => {
+// 应用深色模式
+const applyDarkMode = () => {
+  if (darkMode.value) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+
+// 监听变化并保存
+watch(tasks, saveToStorage, { deep: true })
+watch(darkMode, (newVal) => {
+  saveToStorage()
+  applyDarkMode()
+})
+
+// 初始化（只执行一次）
+const initialize = () => {
+  if (!initialized) {
     loadFromStorage()
     applyDarkMode()
-  })
-
-  // 应用深色模式
-  const applyDarkMode = () => {
-    if (darkMode.value) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    initialized = true
   }
+}
 
-  watch(darkMode, applyDarkMode)
+export function useTaskStore() {
+  // 确保初始化
+  initialize()
 
   // 添加任务
   const addTask = (title, description = '', priority = PRIORITY.MEDIUM) => {
