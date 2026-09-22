@@ -108,9 +108,11 @@ export function useTaskStore() {
 
   // 更新任务
   const updateTask = (id, updates) => {
-    const task = tasks.value.find(t => t.id === id)
-    if (task) {
-      Object.assign(task, updates)
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      // 使用splice触发响应式更新
+      const updatedTask = { ...tasks.value[index], ...updates }
+      tasks.value.splice(index, 1, updatedTask)
       return true
     }
     return false
